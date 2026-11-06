@@ -73,6 +73,9 @@ La infraestructura está compuesta por los siguientes elementos:
                        APACHE
 ```
 
+<img width="338" height="272" alt="image" src="https://github.com/user-attachments/assets/b54cf234-6b1e-4beb-bc89-b82b5266f0b1" />
+
+
 La interfaz NAT adicional de Ubuntu permite el acceso a Internet para la instalación y actualización de los componentes necesarios.
 
 ## 5. Plan de direccionamiento IP
