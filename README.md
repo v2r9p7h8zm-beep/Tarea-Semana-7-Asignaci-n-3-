@@ -2,7 +2,7 @@
 
 **Implementación de infraestructura de red y monitoreo mediante Zabbix**
 
-**VIDEO SUBIDO A YOUTUBE: ** 
+**VIDEO SUBIDO A YOUTUBE: ** https://youtu.be/VjqMX3CDC2M?si=17RtMiDJi3BDbb3L
 
 
 ## 1. Información general
