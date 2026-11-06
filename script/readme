@@ -1,1 +1,228 @@
+TLA – SEGURIDAD DE REDES SCRIPTS Y COMANDOS UTILIZADOS EN EL
+LABORATORIO Estudiante: Jennifer Lopez Matrícula: 20240860
 
+1.  PROPÓSITO
+
+Este documento reúne los comandos y bloques de configuración utilizados
+durante la implementación del laboratorio de Seguridad de Redes. Deben
+guardarse en el repositorio GitHub junto con la documentación, los
+running-configs, las evidencias y los diagramas.
+
+Nota de precisión: algunos comandos se ejecutaron individualmente en la
+terminal durante la práctica y no como archivos .sh. Se documentan aquí
+para que puedan reproducirse. Antes de la entrega, verifica cada bloque
+contra el historial de la terminal y los archivos reales del
+laboratorio. No se deben presentar comandos de verificación como si
+fueran scripts automatizados.
+
+============================================================ 2.
+PREPARACIÓN DEL REPOSITORIO ZABBIX EN UBUNTU
+============================================================
+
+Descarga e instalación del paquete oficial de repositorio Zabbix 7.0
+para Ubuntu 24.04:
+
+wget
+https://repo.zabbix.com/zabbix/7.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_7.0-5+ubuntu24.04_all.deb
+
+sudo dpkg -i zabbix-release_7.0-5+ubuntu24.04_all.deb sudo apt update
+
+============================================================ 3.
+INSTALACIÓN DE LOS COMPONENTES
+============================================================
+
+sudo apt install zabbix-server-mysql zabbix-frontend-php
+zabbix-apache-conf zabbix-sql-scripts mariadb-server -y
+
+Instalación del agente Zabbix 2 en Ubuntu:
+
+sudo apt install zabbix-agent2 -y
+
+============================================================ 4.
+PREPARACIÓN DE LA BASE DE DATOS MARIADB
+============================================================
+
+Entrar a MariaDB:
+
+sudo mariadb
+
+Comandos SQL ejecutados dentro de MariaDB (la contraseña se debe definir
+de forma privada; no guardar una contraseña real en el repositorio):
+
+CREATE DATABASE zabbix CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+
+CREATE USER ‘zabbix’@‘localhost’ IDENTIFIED BY ‘’;
+
+GRANT ALL PRIVILEGES ON zabbix.* TO ‘zabbix’@‘localhost’;
+
+SET GLOBAL log_bin_trust_function_creators = 1;
+
+FLUSH PRIVILEGES;
+
+EXIT;
+
+Importación del esquema inicial:
+
+zcat /usr/share/zabbix-sql-scripts/mysql/server.sql.gz | mysql
+–default-character-set=utf8mb4 -u zabbix -p zabbix
+
+El sistema solicita la contraseña de la cuenta de base de datos.
+Introducirla directamente en la terminal; no escribirla en este
+documento ni en GitHub.
+
+============================================================ 5.
+CONFIGURACIÓN DEL SERVIDOR ZABBIX
+============================================================
+
+Archivo: /etc/zabbix/zabbix_server.conf
+
+Parámetros relevantes:
+
+DBName=zabbix DBUser=zabbix DBPassword=
+
+Después de guardar el archivo:
+
+sudo systemctl restart zabbix-server sudo systemctl enable zabbix-server
+sudo systemctl status zabbix-server
+
+============================================================ 6.
+CONFIGURACIÓN DE RED DE UBUNTU (NETPLAN)
+============================================================
+
+Archivo Netplan utilizado (el nombre puede variar según la instalación):
+
+/etc/netplan/50-cloud-init.yaml
+
+Contenido:
+
+network: version: 2 ethernets: enp0s3: dhcp4: true enp0s8: dhcp4: true
+dhcp4-overrides: use-routes: false
+
+Aplicación y comprobación:
+
+sudo netplan try sudo netplan apply ip address ip route
+
+La interfaz enp0s3 se utilizó para NAT y acceso a Internet. La interfaz
+enp0s8 se utilizó para la LAN 192.168.60.0/24.
+
+============================================================ 7.
+CONFIGURACIÓN DEL AGENTE ZABBIX 2
+============================================================
+
+Archivo: /etc/zabbix/zabbix_agent2.conf
+
+Parámetros:
+
+Server=127.0.0.1,192.168.60.23 ServerActive=127.0.0.1
+Hostname=Ubuntu-ITLA
+
+Aplicar y verificar:
+
+sudo systemctl enable zabbix-agent2 sudo systemctl restart zabbix-agent2
+sudo systemctl status zabbix-agent2
+
+============================================================ 8. COMANDOS
+DE VERIFICACIÓN DE CONECTIVIDAD
+============================================================
+
+Desde Ubuntu Server:
+
+ip address ip route ping -c 4 192.168.60.1 ping -c 4 8.8.8.8 ping -c 4
+google.com
+
+Consulta SNMP al router R1:
+
+snmpget -v 2c -c ITLA20240860 192.168.60.1 1.3.6.1.2.1.1.1.0
+
+Esta consulta permitió comprobar que el router respondía por SNMP y
+devolvía su descripción de sistema.
+
+Desde PC1 (VPCS):
+
+show ip ping 192.168.60.1 ping 192.168.60.22
+
+Desde PC2 (VPCS):
+
+show ip ping 192.168.60.1
+
+============================================================ 9. COMANDOS
+DE VERIFICACIÓN DE SERVICIOS
+============================================================
+
+sudo systemctl status mariadb sudo systemctl status apache2 sudo
+systemctl status zabbix-server sudo systemctl status zabbix-agent2
+
+Para revisar el estado de red:
+
+ip address ip route
+
+Para consultar el estado de Open vSwitch, desde el entorno donde está
+instalado:
+
+sudo ovs-vsctl show
+
+============================================================ 10.
+CONFIGURACIÓN DEL ROUTER R1 (COMANDOS IOS)
+============================================================
+
+Los siguientes comandos configuran la interfaz LAN, el pool DHCP y SNMP.
+Ejecutarlos en la consola de R1:
+
+enable configure terminal
+
+hostname R1
+
+interface FastEthernet0/0 description LAN_ITLA ip address 192.168.60.1
+255.255.255.0 no shutdown exit
+
+ip dhcp excluded-address 192.168.60.1 192.168.60.20
+
+ip dhcp pool LAN_ITLA network 192.168.60.0 255.255.255.0 default-router
+192.168.60.1 dns-server 8.8.8.8 exit
+
+snmp-server community ITLA20240860 RO snmp-server location ITLA-LAB
+snmp-server contact Jennifer
+
+end write memory
+
+Comandos de verificación en R1:
+
+show running-config show ip interface brief show ip dhcp binding show ip
+dhcp pool show snmp
+
+============================================================ 11. CARPETA
+RECOMENDADA PARA LOS SCRIPTS
+============================================================
+
+En el repositorio:
+
+scripts/ install_zabbix_packages.sh database_setup.sql
+import_zabbix_schema.sh service_checks.sh connectivity_checks.sh
+README_SCRIPTS.txt
+
+configs/ R1-running-config.txt ubuntu-netplan.yaml
+zabbix_agent2.conf.example zabbix_server.conf.example ovs-vsctl-show.txt
+
+El presente documento puede guardarse como: scripts/README_SCRIPTS.txt
+
+Si se crean archivos .sh, darles permisos de ejecución con:
+
+chmod +x nombre_del_script.sh
+
+Ejecutarlos únicamente después de revisar su contenido y confirmar que
+corresponde al entorno del laboratorio.
+
+============================================================ 12.
+SEGURIDAD ANTES DE PUBLICAR EN GITHUB
+============================================================
+
+-   No subir contraseñas reales de MariaDB o Zabbix.
+-   No subir tokens, claves privadas ni credenciales.
+-   Sustituir contraseñas por marcadores como .
+-   La comunidad SNMP ITLA20240860 es de laboratorio; cambiarla antes de
+    publicar el proyecto o exponer la red.
+-   Revisar los archivos antes de hacer git add y git push.
+-   No incluir archivos de base de datos, copias de seguridad con
+    credenciales ni archivos .env reales.
+
+FIN DEL DOCUMENTO
