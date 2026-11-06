@@ -1,1 +1,151 @@
+ITLA – SEGURIDAD DE REDES RUNNING-CONFIGS Y ARCHIVOS DE CONFIGURACIÓN
+Estudiante: Jennifer Lopez Matrícula: 20240860
 
+
+! Equipo: Router principal R1 ! Red LAN: 192.168.60.0/24 ! Gateway:
+192.168.60.1 ! DHCP: LAN_ITLA ! SNMP: SNMPv2c, solo lectura
+
+configure terminal
+
+hostname R1
+
+interface FastEthernet0/0 description LAN_ITLA ip address 192.168.60.1
+255.255.255.0 no shutdown exit
+
+! Reservar las direcciones 192.168.60.1 a 192.168.60.20 ip dhcp
+excluded-address 192.168.60.1 192.168.60.20
+
+ip dhcp pool LAN_ITLA network 192.168.60.0 255.255.255.0 default-router
+192.168.60.1 dns-server 8.8.8.8 exit
+
+! Configuración SNMP para monitoreo desde Zabbix snmp-server community
+ITLA20240860 RO snmp-server location ITLA-LAB snmp-server contact
+Jennifer
+
+end write memory
+
+============================================================ 2. UBUNTU
+SERVER – CONFIGURACIÓN DE RED (NETPLAN)
+============================================================
+
+Archivo: /etc/netplan/50-cloud-init.yaml (El nombre exacto puede variar
+según la instalación.)
+
+network: version: 2 ethernets: enp0s3: dhcp4: true enp0s8: dhcp4: true
+dhcp4-overrides: use-routes: false
+
+Descripción: - enp0s3 obtiene dirección por DHCP desde la red NAT de
+VirtualBox. - Dirección observada: 10.0.2.15/24. - Gateway NAT
+observado: 10.0.2.2. - enp0s8 conecta Ubuntu con la LAN del
+laboratorio. - Dirección observada en la LAN: 192.168.60.23/24. -
+use-routes: false evita que la interfaz LAN instale una ruta por defecto
+adicional.
+
+Aplicación de cambios: sudo netplan try sudo netplan apply
+
+Comprobación: ip address ip route
+
+============================================================ 3. UBUNTU
+SERVER – AGENTE ZABBIX 2
+============================================================
+
+Archivo: /etc/zabbix/zabbix_agent2.conf
+
+Server=127.0.0.1,192.168.60.23 ServerActive=127.0.0.1
+Hostname=Ubuntu-ITLA
+
+Notas: - Host configurado en Zabbix: Ubuntu-ITLA. - Nombre visible:
+Servidor Ubuntu ITLA. - Interfaz del agente registrada en Zabbix:
+192.168.60.23, puerto 10050. - Plantilla aplicada: Linux by Zabbix
+agent. - El servicio zabbix-agent2 quedó habilitado y activo.
+
+Comandos de servicio: sudo systemctl enable zabbix-agent2 sudo systemctl
+restart zabbix-agent2 sudo systemctl status zabbix-agent2
+
+============================================================ 4. ZABBIX
+SERVER – CONFIGURACIÓN DE CONEXIÓN A BASE DE DATOS
+============================================================
+
+Archivo: /etc/zabbix/zabbix_server.conf
+
+DBName=zabbix DBUser=zabbix DBPassword=
+
+IMPORTANTE: No publicar contraseñas reales en GitHub. Antes de subir el
+repositorio, sustituye cualquier contraseña por un marcador como el
+mostrado arriba o utiliza un archivo de ejemplo sin credenciales. La
+contraseña real debe mantenerse fuera del repositorio.
+
+Servicio: sudo systemctl enable zabbix-server sudo systemctl restart
+zabbix-server sudo systemctl status zabbix-server
+
+============================================================ 5.
+SERVICIOS DEL SERVIDOR UBUNTU
+============================================================
+
+Servicios utilizados: - MariaDB: base de datos zabbix. - Apache2:
+servidor web para la interfaz de Zabbix. - Zabbix Server: procesamiento
+y almacenamiento de monitoreo. - Zabbix Agent 2: monitoreo del servidor
+Ubuntu.
+
+Comprobación de estado: sudo systemctl status mariadb sudo systemctl
+status apache2 sudo systemctl status zabbix-server sudo systemctl status
+zabbix-agent2
+
+============================================================ 6.
+DISPOSITIVOS VPCS – PC1 Y PC2
+============================================================
+
+Los equipos PC1 y PC2 utilizaron DHCP desde el router R1. No tienen un
+running-config persistente equivalente al de Cisco IOS.
+
+Direcciones observadas: PC1: 192.168.60.21/24 PC2: 192.168.60.22/24
+Gateway: 192.168.60.1
+
+Comandos de verificación en cada VPCS: show ip ping 192.168.60.1
+
+Prueba entre equipos: Desde PC1: ping 192.168.60.22
+
+La comunicación entre PC1, PC2 y R1 fue verificada correctamente.
+
+============================================================ 7. OPEN
+VSWITCH ============================================================
+
+El laboratorio utilizó Open vSwitch como switch de capa 2 dentro de
+GNS3. No se documentó una configuración persistente específica de
+puertos o VLAN para exportar como running-config. Por tanto, no se
+incluyen comandos de configuración inventados.
+
+Para documentar la configuración real del switch, ejecutar en el entorno
+donde corre Open vSwitch:
+
+sudo ovs-vsctl show
+
+Guardar la salida en un archivo, por ejemplo: ovs-vsctl-show.txt
+
+============================================================ 8. RESUMEN
+DE DIRECCIONAMIENTO
+============================================================
+
+Dispositivo Interfaz Dirección Función R1 Fa0/0 192.168.60.1/24 Gateway
+/ DHCP / SNMP PC1 Ethernet 192.168.60.21/24 Cliente DHCP PC2 Ethernet
+192.168.60.22/24 Cliente DHCP Ubuntu Server enp0s8 192.168.60.23/24 LAN
+/ Zabbix Agent 2 Ubuntu Server enp0s3 10.0.2.15/24 NAT / acceso a
+Internet
+
+============================================================ 9. ARCHIVOS
+RECOMENDADOS PARA EL REPOSITORIO
+============================================================
+
+configs/ R1-running-config.txt ubuntu-netplan.yaml
+zabbix_agent2.conf.example zabbix_server.conf.example ovs-vsctl-show.txt
+
+Recomendación: 1. En el router, ejecutar “show running-config” y guardar
+la salida real como R1-running-config.txt. 2. En Ubuntu, copiar el
+contenido real de los archivos Netplan y Zabbix, ocultando credenciales.
+3. En Open vSwitch, ejecutar “sudo ovs-vsctl show” y guardar la salida.
+4. No incluir contraseñas, tokens ni credenciales reales en el
+repositorio público. 5. Revisar que las configuraciones exportadas
+coincidan con la topología y el direccionamiento descritos en el
+informe.
+
+FIN DEL DOCUMENTO
