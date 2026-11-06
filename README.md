@@ -2,6 +2,9 @@
 
 **Implementación de infraestructura de red y monitoreo mediante Zabbix**
 
+**VIDEO SUBIDO A YOUTUBE: ** 
+
+
 ## 1. Información general
 
 | Campo                    | Información                                          |
