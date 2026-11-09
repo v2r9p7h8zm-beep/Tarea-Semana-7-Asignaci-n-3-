@@ -1,0 +1,15 @@
+Ubuntu Server — configuración de red Netplan
+Archivo: /etc/netplan/50-cloud-init.yaml. enp0s3 usa NAT (10.0.2.15/24; gateway 10.0.2.2); enp0s8 conecta con la LAN (192.168.60.23/24).
+network:
+  version: 2
+  ethernets:
+    enp0s3:
+      dhcp4: true
+    enp0s8:
+      dhcp4: true
+      dhcp4-overrides:
+        use-routes: false
+sudo netplan try
+sudo netplan apply
+ip address
+ip route

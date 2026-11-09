@@ -1,0 +1,52 @@
+Zabbix Agent 2 — configuración Ubuntu
+Archivo: /etc/zabbix/zabbix_agent2.conf. Host técnico Ubuntu-ITLA; dirección del agente 192.168.60.23:10050.
+Server=127.0.0.1,192.168.60.23
+ServerActive=127.0.0.1
+Hostname=Ubuntu-ITLA
+sudo systemctl enable zabbix-agent2
+sudo systemctl restart zabbix-agent2
+sudo systemctl status zabbix-agent2
+5. Zabbix Server — configuración de base de datos
+Archivo: /etc/zabbix/zabbix_server.conf. La contraseña de MariaDB se ha sustituido por un marcador para no publicar credenciales.
+DBName=zabbix
+DBUser=zabbix
+DBPassword=<CONTRASENA_CONFIGURADA>
+sudo systemctl enable zabbix-server
+sudo systemctl restart zabbix-server
+sudo systemctl status zabbix-server
+6. MariaDB — creación de base de datos, usuario y permisos
+sudo mariadb
+
+CREATE DATABASE zabbix CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+CREATE USER 'zabbix'@'localhost' IDENTIFIED BY '<CONTRASENA_CONFIGURADA>';
+GRANT ALL PRIVILEGES ON zabbix.* TO 'zabbix'@'localhost';
+SET GLOBAL log_bin_trust_function_creators = 1;
+FLUSH PRIVILEGES;
+EXIT;
+Importación del esquema de Zabbix:
+zcat /usr/share/zabbix-sql-scripts/mysql/server.sql.gz | mysql -u zabbix -p zabbix
+Verificación de tablas:
+sudo mariadb -e "SELECT COUNT(*) AS tablas FROM information_schema.tables WHERE table_schema='zabbix';" 
+7. Repositorio e instalación de Zabbix 7.0 — Ubuntu 24.04
+wget https://repo.zabbix.com/zabbix/7.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_7.0-5+ubuntu24.04_all.deb
+sudo dpkg -i zabbix-release_7.0-5+ubuntu24.04_all.deb
+sudo apt update
+sudo apt install zabbix-server-mysql zabbix-frontend-php zabbix-apache-conf zabbix-sql-scripts mariadb-server -y
+sudo apt install zabbix-agent2 -y
+Servicios del servidor:
+sudo systemctl status mariadb
+sudo systemctl status apache2
+sudo systemctl status zabbix-server
+sudo systemctl status zabbix-agent2
+8. Parámetros del frontend y hosts registrados en Zabbix
+Frontend: nombre ITLA Seguridad de Redes · zona horaria America/Santo_Domingo · Apache HTTP puerto 80 · acceso desde Windows por VirtualBox NAT port forwarding: 127.0.0.1:8080 → 10.0.2.15:80 · URL local http://localhost:8080/zabbix.
+Host R1: nombre técnico R1-Cisco · nombre visible Router Principal R1 · grupo Network devices · plantilla Cisco IOS by SNMP · interfaz 192.168.60.1:161 · SNMPv2c · comunidad ITLA20240860.
+Host Ubuntu: nombre técnico Ubuntu-ITLA · nombre visible Servidor Ubuntu ITLA · grupo Linux servers · plantilla Linux by Zabbix agent · interfaz 192.168.60.23:10050.
+9. Direccionamiento de los nodos
+Nodo/interfaz	Dirección	Función
+R1 Fa0/0	192.168.60.1/24	Gateway, DHCP, SNMP
+SW1 VLAN 1 (referencia IOS)	192.168.60.2/24	Administración
+PC1	192.168.60.21/24	Cliente DHCP
+PC2	192.168.60.22/24	Cliente DHCP
+Ubuntu enp0s8	192.168.60.23/24	LAN / Agent 2
+Ubuntu enp0s3	10.0.2.15/24	NAT / Internet

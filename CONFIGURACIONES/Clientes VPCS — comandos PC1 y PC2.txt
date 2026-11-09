@@ -1,0 +1,20 @@
+ Clientes VPCS — comandos PC1 y PC2
+PC1:
+show ip
+ping 192.168.60.1
+ping 192.168.60.22
+
+PC2:
+show ip
+ping 192.168.60.1
+11. Pruebas de conectividad desde Ubuntu y consulta SNMP
+ip address
+ip route
+ping -c 4 192.168.60.1
+ping -c 4 8.8.8.8
+ping -c 4 google.com
+Consulta SNMPv2c a R1:
+sudo apt install snmp
+snmpget -v 2c -c ITLA20240860 192.168.60.1 1.3.6.1.2.1.1.1.0
+12. Parámetros de red y servicios utilizados
+LAN: 192.168.60.0/24 · R1: 192.168.60.1 · DHCP excluye 192.168.60.1–192.168.60.20 · PC1: .21 · PC2: .22 · Ubuntu LAN: .23 · Ubuntu NAT: 10.0.2.15 · gateway NAT: 10.0.2.2 · SNMP UDP/161 · Zabbix Agent TCP/10050 · HTTP/80 · Zabbix Server 7.0.32 · MariaDB database zabbix.

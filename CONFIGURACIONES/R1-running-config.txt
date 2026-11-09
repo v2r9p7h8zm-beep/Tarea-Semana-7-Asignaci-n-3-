@@ -1,0 +1,32 @@
+Router Cisco R1 — configuración IOS
+FastEthernet0/0 · LAN 192.168.60.0/24 · Gateway 192.168.60.1 · DHCP y SNMPv2c RO.
+enable
+configure terminal
+hostname R1
+
+interface FastEthernet0/0
+ description LAN_ITLA
+ ip address 192.168.60.1 255.255.255.0
+ no shutdown
+exit
+
+ip dhcp excluded-address 192.168.60.1 192.168.60.20
+
+ip dhcp pool LAN_ITLA
+ network 192.168.60.0 255.255.255.0
+ default-router 192.168.60.1
+ dns-server 8.8.8.8
+exit
+
+snmp-server community ITLA20240860 RO
+snmp-server location ITLA-LAB
+snmp-server contact Jennifer
+
+end
+write memory
+Comandos de verificación de R1:
+show running-config
+show ip interface brief
+show ip dhcp binding
+show ip dhcp pool
+show snmp

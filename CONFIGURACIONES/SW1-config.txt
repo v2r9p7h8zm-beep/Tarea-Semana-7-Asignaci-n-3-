@@ -1,0 +1,53 @@
+enable
+configure terminal
+hostname SW1
+
+vlan 1
+ name LAN_ITLA
+exit
+
+interface FastEthernet0/1
+ description UPLINK_R1
+ switchport mode access
+ switchport access vlan 1
+ no shutdown
+exit
+
+interface FastEthernet0/2
+ description PC1
+ switchport mode access
+ switchport access vlan 1
+ spanning-tree portfast
+ no shutdown
+exit
+
+interface FastEthernet0/3
+ description PC2
+ switchport mode access
+ switchport access vlan 1
+ spanning-tree portfast
+ no shutdown
+exit
+
+interface FastEthernet0/4
+ description UBUNTU_ZABBIX
+ switchport mode access
+ switchport access vlan 1
+ spanning-tree portfast
+ no shutdown
+exit
+
+interface Vlan1
+ description MANAGEMENT_LAN
+ ip address 192.168.60.2 255.255.255.0
+ no shutdown
+exit
+
+ip default-gateway 192.168.60.1
+
+snmp-server community ITLA20240860 RO
+snmp-server location ITLA-LAB
+snmp-server contact Jennifer
+
+end
+write memory
